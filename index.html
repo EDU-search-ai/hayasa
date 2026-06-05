@@ -207,7 +207,7 @@
     let currentIdx = 0;
     let maxLife = 3;
     let currentLife = 3; 
-    let gameCleared = false; // 全クリアフラグを追加
+    let gameCleared = false;
     let myEquip = { weapon: "🪵", shield: "🪵", armor: "🪵" };
 
     const shopItems = [
@@ -227,7 +227,8 @@
         { id: 'a4', type: 'armor', name: '太陽のゴッドローブ', icon: '👑', price: 1200, bought: false }
     ];
 
-    const quizData = [
+    // 元の問題データ
+    const masterQuizData = [
         // --- 1〜10問: 基本編（み・は・じの使い方） ---
         { question: "【Q1: 速さ】チーターが5秒間で100m走りました。1秒あたり何m進んだ？", answers: ["5m", "10m", "20m", "50m", "100m", "500m"], correct: 2, feedback: "正解！ 1秒に進む距離＝秒速だよ。" },
         { question: "【Q2: 道のり】時速60kmの車が3時間走ると、何km進む？", answers: ["20km", "63km", "120km", "180km", "240km", "360km"], correct: 3, feedback: "正解！ 道のり＝速さ×時間（60×3）だ！" },
@@ -264,6 +265,29 @@
         { question: "【Q29: 応用】長さ100mの電車が、時速72km（秒速20m）で走っています。この電車が電柱の前を通り過ぎるのに何秒かかる？", answers: ["2秒", "5秒", "10秒", "20秒", "50秒", "72秒"], correct: 1, feedback: "正解！ 電車が自分の長さ分進めばいいから、100m÷秒速20m＝5秒！" },
         { question: "【Q30: 最終試練】時速90kmの車と、分速1400mのバイクと、秒速22mのドローン。一番速いのはどれ？", answers: ["車", "バイク", "ドローン", "車とバイクは同じ", "バイクとドローンは同じ", "すべて同じ速さ"], correct: 0, feedback: "素晴らしい！すべて秒速に直すと、車は25m、バイクは約23.3m、ドローンは22m。よって車が一番速い！" }
     ];
+
+    // 実際にゲームで使用する問題配列（シャッフルしてここに格納する）
+    let quizData = [];
+
+    // 配列をランダムにシャッフルする関数（フィッシャー・イェーツのシャッフル）
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // ステージ（基本・単位・応用）の難易度崩れを防ぐためのシャッフル生成器
+    function generateShuffledQuizData() {
+        // 各ブロックごとにコピーしてシャッフル
+        const block1 = shuffleArray(masterQuizData.slice(0, 10));  // 1〜10問目（基本編）
+        const block2 = shuffleArray(masterQuizData.slice(10, 20)); // 11〜20問目（単位編）
+        const block3 = shuffleArray(masterQuizData.slice(20, 30)); // 21〜30問目（応用編）
+        
+        // シャッフルした3つのブロックをがっちゃんこして新しい問題配列を作る
+        quizData = [...block1, ...block2, ...block3];
+    }
 
     function updateStatusDOM() {
         document.getElementById("coin-count").innerText = `💰 ${coins} G`;
@@ -330,7 +354,7 @@
                 resultText.innerHTML = '<span class="incorrect">☠️ やられてしまった！ ポチポチ押しは厳禁だ！</span><br><span style="font-size:12px; color:#ddd;">しっかり頭の中で計算して、もう一度第1問から挑戦しよう！</span>';
                 
                 const actionBtn = document.getElementById("action-button");
-                actionBtn.innerText = "↩️ 第1問からやり直す"; // タイポ修正
+                actionBtn.innerText = "↩️ 新しい問題順でやり直す";
                 actionBtn.style.display = "block";
             } else {
                 resultText.innerHTML = '<span class="incorrect">❌ 攻撃失敗！うわあ！</span><br><span style="font-size:12px; color:#ddd;">「み・は・じ」をもう一度チェックして計算しよう！</span>';
@@ -343,6 +367,7 @@
         if (currentLife <= 0) {
             currentIdx = 0;
             currentLife = maxLife;
+            generateShuffledQuizData(); // ★ゲームオーバーからの復帰時に再シャッフル！
             updateStatusDOM();
             loadQuestion();
             return;
@@ -358,7 +383,6 @@
         if (currentIdx < quizData.length) {
             loadQuestion();
         } else {
-            // 初めて全クリアした時のみボーナス付与
             if (!gameCleared) {
                 coins += 500; 
                 gameCleared = true;
@@ -374,7 +398,6 @@
         document.getElementById("result-text").innerHTML = msg ? `<span style="color:#ffd700;">${msg}</span>` : "";
         document.getElementById("shop-view").style.display = "block";
         
-        // 全クリア後のボタンテキスト調整
         const leaveBtn = document.getElementById("shop-leave-btn");
         if (gameCleared) {
             leaveBtn.innerText = "👑 クリア画面に戻る";
@@ -399,7 +422,6 @@
             if (item.bought) {
                 btnText = "装備中";
             } else if (shopItems.find(i => i.type === item.type && i.bought)) {
-                // 同じタイプの別装備をすでに持っている場合でも、お金があれば買える（買い替え可能）
                 canBuy = coins >= item.price;
             }
 
@@ -418,7 +440,6 @@
         if (item && coins >= item.price) {
             coins -= item.price;
             
-            // 同じタイプの装備の購入フラグをリセット
             shopItems.forEach(i => {
                 if (i.type === item.type) i.bought = false;
             });
@@ -441,7 +462,6 @@
         const container = document.getElementById("options-container");
         container.innerHTML = "";
         
-        // クリア画面から再度よろず屋に行けるボタンを設置
         const shopBtn = document.createElement("button");
         shopBtn.className = "btn";
         shopBtn.style.gridColumn = "1 / span 2";
@@ -459,6 +479,8 @@
         loadQuestion();
     }
 
+    // --- ゲームの初期起動処理 ---
+    generateShuffledQuizData(); // ★起動時に最初のシャッフルを実行！
     updateStatusDOM();
     loadQuestion();
 </script>
