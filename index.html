@@ -195,7 +195,7 @@
     <div class="shop-window" id="shop-view">
         <div class="shop-title">🏪 よろず屋（全12装備）</div>
         <div id="shop-items-list"></div>
-        <button class="btn" style="width:100%; margin-top:10px; border-color:#ffd700;" onclick="backToQuiz()">次のステージへ（冒険を続ける）</button>
+        <button class="btn" id="shop-leave-btn" style="width:100%; margin-top:10px; border-color:#ffd700;" onclick="backToQuiz()">次のステージへ（冒険を続ける）</button>
     </div>
 
     <div class="result-message" id="result-text"></div>
@@ -207,6 +207,7 @@
     let currentIdx = 0;
     let maxLife = 3;
     let currentLife = 3; 
+    let gameCleared = false; // 全クリアフラグを追加
     let myEquip = { weapon: "🪵", shield: "🪵", armor: "🪵" };
 
     const shopItems = [
@@ -240,7 +241,7 @@
         { question: "【Q10: 速さ】新幹線が2時間で500km走りました。時速何km？", answers: ["100km", "200km", "250km", "300km", "498km", "1000km"], correct: 2, feedback: "正解！ 500÷2＝250（時速250km）だ！" },
 
         // --- 11〜20問: 単位のワナ編（m⇔km、分⇔時間など） ---
-        { question: "【Q11: 単位】分速80mで2時間歩きました。進んだ道のりは何m？<br>※時間は分に直そう！", answers: ["160m", "960m", "1600m", "4800m", "9600m", "16000m"], correct: 4, feedback: "正解！ 2時間＝120分。80×120＝9600mだ！" },
+        { question: "【Q11: 単位】分速80mで2時間歩しました。進んだ道のりは何m？<br>※時間は分に直そう！", answers: ["160m", "960m", "1600m", "4800m", "9600m", "16000m"], correct: 4, feedback: "正解！ 2時間＝120分。80×120＝9600mだ！" },
         { question: "【Q12: 単位】時速4kmで歩く人が、12km進むのに何時間かかる？", answers: ["2時間", "3時間", "4時間", "8時間", "16時間", "48時間"], correct: 1, feedback: "正解！ 12÷4＝3時間。単位が揃っていればそのまま計算！" },
         { question: "【Q13: 単位】秒速5mのラジコンが1分間走りました。何m進んだ？", answers: ["5m", "60m", "120m", "300m", "500m", "600m"], correct: 3, feedback: "正解！ 1分＝60秒。5×60＝300mだね！" },
         { question: "【Q14: 単位】時速60kmの車が30分走りました。何km進んだ？<br>※30分は何時間かな？", answers: ["2km", "15km", "20km", "30km", "90km", "1800km"], correct: 3, feedback: "正解！ 30分＝0.5時間（半時間）。60×0.5＝30km！" },
@@ -283,6 +284,11 @@
         document.getElementById("quiz-view").style.display = "block";
         document.getElementById("shop-view").style.display = "none";
         
+        if (gameCleared) {
+            showClearScreen();
+            return;
+        }
+
         const currentQuiz = quizData[currentIdx];
         document.getElementById("progress").innerText = `第 ${currentIdx + 1} 問 / ${quizData.length}`;
         document.getElementById("question-text").innerHTML = currentQuiz.question;
@@ -306,7 +312,6 @@
         const resultText = document.getElementById("result-text");
         const buttons = document.querySelectorAll("#options-container .btn");
         
-        // 回答が選択されたらすべてのボタンを一瞬無効化（連打防止）
         buttons.forEach(btn => btn.disabled = true);
 
         if (selectedIndex === currentQuiz.correct) {
@@ -322,14 +327,12 @@
             updateStatusDOM();
 
             if (currentLife <= 0) {
-                // 3回ミス：完全にゲームオーバー。選択ボタンは無効化したままにする
                 resultText.innerHTML = '<span class="incorrect">☠️ やられてしまった！ ポチポチ押しは厳禁だ！</span><br><span style="font-size:12px; color:#ddd;">しっかり頭の中で計算して、もう一度第1問から挑戦しよう！</span>';
                 
                 const actionBtn = document.getElementById("action-button");
-                actionBtn.innerText = "↩️ 第1問からやり長す"; // テキスト整合性確保
+                actionBtn.innerText = "↩️ 第1問からやり直す"; // タイポ修正
                 actionBtn.style.display = "block";
             } else {
-                // まだライフがある：1.2秒後にボタンを再有効化して解き直しを促す
                 resultText.innerHTML = '<span class="incorrect">❌ 攻撃失敗！うわあ！</span><br><span style="font-size:12px; color:#ddd;">「み・は・じ」をもう一度チェックして計算しよう！</span>';
                 setTimeout(() => { buttons.forEach(btn => btn.disabled = false); }, 1200);
             }
@@ -355,11 +358,12 @@
         if (currentIdx < quizData.length) {
             loadQuestion();
         } else {
-            coins += 500; 
+            // 初めて全クリアした時のみボーナス付与
+            if (!gameCleared) {
+                coins += 500; 
+                gameCleared = true;
+            }
             updateStatusDOM();
-            document.getElementById("progress").innerText = "👑 全ステージ制覇！";
-            document.getElementById("question-text").innerHTML = "🎉 おめでとう！全30問の『速さ』の試練を完全クリアした！ 🎉<br>ボーナスとして500Gを贈る！最強の装備を揃えよう！";
-            document.getElementById("options-container").innerHTML = "";
             openShop("👑 最終ショップオープン！");
         }
     }
@@ -369,6 +373,15 @@
         document.getElementById("action-button").style.display = "none";
         document.getElementById("result-text").innerHTML = msg ? `<span style="color:#ffd700;">${msg}</span>` : "";
         document.getElementById("shop-view").style.display = "block";
+        
+        // 全クリア後のボタンテキスト調整
+        const leaveBtn = document.getElementById("shop-leave-btn");
+        if (gameCleared) {
+            leaveBtn.innerText = "👑 クリア画面に戻る";
+        } else {
+            leaveBtn.innerText = "次のステージへ（冒険を続ける）";
+        }
+        
         renderShopItems();
     }
 
@@ -382,7 +395,13 @@
             
             let btnText = `${item.price} G`;
             let canBuy = coins >= item.price && !item.bought;
-            if (item.bought) btnText = "装備中";
+            
+            if (item.bought) {
+                btnText = "装備中";
+            } else if (shopItems.find(i => i.type === item.type && i.bought)) {
+                // 同じタイプの別装備をすでに持っている場合でも、お金があれば買える（買い替え可能）
+                canBuy = coins >= item.price;
+            }
 
             div.innerHTML = `
                 <div class="item-info">
@@ -396,9 +415,10 @@
 
     function buyItem(id) {
         const item = shopItems.find(i => i.id === id);
-        if (item && coins >= item.price && !item.bought) {
+        if (item && coins >= item.price) {
             coins -= item.price;
             
+            // 同じタイプの装備の購入フラグをリセット
             shopItems.forEach(i => {
                 if (i.type === item.type) i.bought = false;
             });
@@ -414,11 +434,27 @@
         }
     }
 
+    function showClearScreen() {
+        document.getElementById("progress").innerText = "👑 全ステージ制覇！";
+        document.getElementById("question-text").innerHTML = "🎉 おめでとう！全30問の『速さ』の試練を完全クリアした！ 🎉<br>君はもう速さのマスターだ！最強の装備を揃えよう！";
+        
+        const container = document.getElementById("options-container");
+        container.innerHTML = "";
+        
+        // クリア画面から再度よろず屋に行けるボタンを設置
+        const shopBtn = document.createElement("button");
+        shopBtn.className = "btn";
+        shopBtn.style.gridColumn = "1 / span 2";
+        shopBtn.style.borderColor = "#ffd700";
+        shopBtn.innerText = "🏪 よろず屋へ買い物に行く";
+        shopBtn.onclick = () => openShop("👑 最強の勇者専用ショップ");
+        container.appendChild(shopBtn);
+    }
+
     function backToQuiz() {
-        if (currentIdx >= quizData.length) {
-            currentIdx = 0;
+        if (!gameCleared) {
+            currentLife = maxLife;
         }
-        currentLife = maxLife;
         updateStatusDOM();
         loadQuestion();
     }
