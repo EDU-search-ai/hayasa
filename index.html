@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハヤサクエスト・ギガDX</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1a1a2e;
+            color: #fff;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 420px;
+            background: #162447;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+            border: 2px solid #e43f5a;
+        }
+        .logo-container {
+            width: 100%;
+            max-width: 380px;
+            margin: 0 auto 15px auto;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .logo-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 0 8px rgba(228,63,90,0.3));
+        }
+        .status-bar {
+            background: #1f4068;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #e43f5a;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .equipment-slots {
+            font-size: 24px;
+            letter-spacing: 5px;
+        }
+        .coin-display {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .life-display {
+            font-size: 16px;
+            color: #ff3366;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .progress {
+            font-size: 14px;
+            color: #bbb;
+            margin-bottom: 10px;
+        }
+        .card {
+            background: #1f4068;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: bold;
+            line-height: 1.6;
+            border-left: 5px solid #e43f5a;
+            text-align: left;
+        }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn {
+            background-color: #0f3460;
+            color: white;
+            border: 2px solid #e43f5a;
+            border-radius: 10px;
+            padding: 12px 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+        }
+        .shop-window {
+            display: none;
+            background: #1f4068;
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .shop-title {
+            color: #ffd700;
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            background: #1f4068;
+            padding: 5px;
+        }
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #162447;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            border: 1px solid #3aafa9;
+        }
+        .item-info {
+            text-align: left;
+            font-size: 13px;
+        }
+        .buy-btn {
+            background: #ffd700;
+            color: #111;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .buy-btn:disabled {
+            background: #555;
+            color: #888;
+        }
+        .result-message {
+            margin-top: 15px;
+            font-size: 15px;
+            font-weight: bold;
+            min-height: 40px;
+        }
+        .correct { color: #00ff66; font-size: 18px; }
+        .incorrect { color: #ff3333; }
+        .action-btn {
+            background-color: #e43f5a;
+            color: white;
+            border: none;
+            margin-top: 15px;
+            display: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="logo-container">
+        <img src="32873.png" alt="ハヤサクエスト ギガDX" class="logo-img">
+    </div>
+    
+    <div class="status-bar">
+        <div>
+            <div style="font-size: 11px; color: #aaa;">そうび</div>
+            <div class="equipment-slots" id="equip-display">🪵🪵🪵</div>
+        </div>
+        <div class="coin-display" id="coin-count">💰 0 G</div>
+    </div>
+
+    <div id="quiz-view">
+        <div class="life-display" id="life-count">❤️ ❤️ ❤️</div>
+        <div class="progress" id="progress">第 1 問 / 30</div>
+        <div class="card" id="question-text">ロード中...</div>
+        <div class="options" id="options-container"></div>
+    </div>
+
+    <div class="shop-window" id="shop-view">
+        <div class="shop-title">🏪 よろず屋（全12装備）</div>
+        <div id="shop-items-list"></div>
+        <button class="btn" style="width:100%; margin-top:10px; border-color:#ffd700;" onclick="backToQuiz()">次のステージへ（冒険を続ける）</button>
+    </div>
+
+    <div class="result-message" id="result-text"></div>
+    <button class="action-btn" id="action-button" onclick="handleAction()">次の問題へ ➔</button>
+</div>
+
+<script>
+    let coins = 0;
+    let currentIdx = 0;
+    let maxLife = 3;
+    let currentLife = 3; 
+    let myEquip = { weapon: "🪵", shield: "🪵", armor: "🪵" };
+
+    const shopItems = [
+        { id: 'w1', type: 'weapon', name: '銅のつるぎ', icon: '🗡️', price: 100, bought: false },
+        { id: 'w2', type: 'weapon', name: '魔法の杖', icon: '🪄', price: 250, bought: false },
+        { id: 'w3', type: 'weapon', name: 'レーザーブレード', icon: '⚔️', price: 500, bought: false },
+        { id: 'w4', type: 'weapon', name: '光速の神剣', icon: '🔱', price: 1000, bought: false },
+        
+        { id: 's1', type: 'shield', name: 'おなべのふた', icon: '🍳', price: 50, bought: false },
+        { id: 's2', type: 'shield', name: '木の盾', icon: '🪵', price: 150, bought: false },
+        { id: 's3', type: 'shield', name: '魔法の盾', icon: '🛡️', price: 400, bought: false },
+        { id: 's4', type: 'shield', name: 'イージスの鏡盾', icon: '🔰', price: 900, bought: false },
+        
+        { id: 'a1', type: 'armor', name: '旅人の服', icon: '👕', price: 80, bought: false },
+        { id: 'a2', type: 'armor', name: '忍者スーツ', icon: '🥷', price: 300, bought: false },
+        { id: 'a3', type: 'armor', name: '鋼鉄のよろい', icon: '🤖', price: 600, bought: false },
+        { id: 'a4', type: 'armor', name: '太陽のゴッドローブ', icon: '👑', price: 1200, bought: false }
+    ];
+
+    const quizData = [
+        // --- 1〜10問: 基本編（み・は・じの使い方） ---
+        { question: "【Q1: 速さ】チーターが5秒間で100m走りました。1秒あたり何m進んだ？", answers: ["5m", "10m", "20m", "50m", "100m", "500m"], correct: 2, feedback: "正解！ 1秒に進む距離＝秒速だよ。" },
+        { question: "【Q2: 道のり】時速60kmの車が3時間走ると、何km進む？", answers: ["20km", "63km", "120km", "180km", "240km", "360km"], correct: 3, feedback: "正解！ 道のり＝速さ×時間（60×3）だ！" },
+        { question: "【Q3: 時間】1500mを分速300mの自転車で行くと、何分かかる？", answers: ["3分", "5分", "12分", "45分", "300分", "450分"], correct: 1, feedback: "正解！ 時間＝道のり÷速さ（1500÷300）だね。" },
+        { question: "【Q4: 速さ】犬が4秒間で32m走りました。秒速何m？", answers: ["4m", "6m", "8m", "12m", "28m", "128m"], correct: 2, feedback: "正解！ 32÷4＝8（秒速8m）だね！" },
+        { question: "【Q5: 道のり】分速70mで歩く人が20分歩くと、何m進む？", answers: ["3.5m", "50m", "90m", "140m", "1400m", "7000m"], correct: 4, feedback: "正解！ 70×20＝1400mだ！" },
+        { question: "【Q6: 時間】240kmの道のりを時速80kmの電車で行くと、何時間かかる？", answers: ["2時間", "3時間", "4時間", "6時間", "160時間", "320時間"], correct: 1, feedback: "正解！ 240÷80＝3時間だ！" },
+        { question: "【Q7: 速さ】タカが3秒間で60m飛びました。秒速何m？", answers: ["10m", "20m", "30m", "40m", "57m", "180m"], correct: 1, feedback: "正解！ 60÷3＝20（秒速20m）だ！" },
+        { question: "【Q8: 道のり】秒速4mで走るロボットが15秒進むと、何m進む？", answers: ["11m", "19m", "30m", "45m", "60m", "90m"], correct: 4, feedback: "正解！ 4×15＝60mだ！" },
+        { question: "【Q9: 時間】450mの道のりを分速90mで歩くと、何分かかる？", answers: ["4分", "5分", "6分", "9分", "360分", "540分"], correct: 1, feedback: "正解！ 450÷90＝5分だ！" },
+        { question: "【Q10: 速さ】新幹線が2時間で500km走りました。時速何km？", answers: ["100km", "200km", "250km", "300km", "498km", "1000km"], correct: 2, feedback: "正解！ 500÷2＝250（時速250km）だ！" },
+
+        // --- 11〜20問: 単位のワナ編（m⇔km、分⇔時間など） ---
+        { question: "【Q11: 単位】分速80mで2時間歩きました。進んだ道のりは何m？<br>※時間は分に直そう！", answers: ["160m", "960m", "1600m", "4800m", "9600m", "16000m"], correct: 4, feedback: "正解！ 2時間＝120分。80×120＝9600mだ！" },
+        { question: "【Q12: 単位】時速4kmで歩く人が、12km進むのに何時間かかる？", answers: ["2時間", "3時間", "4時間", "8時間", "16時間", "48時間"], correct: 1, feedback: "正解！ 12÷4＝3時間。単位が揃っていればそのまま計算！" },
+        { question: "【Q13: 単位】秒速5mのラジコンが1分間走りました。何m進んだ？", answers: ["5m", "60m", "120m", "300m", "500m", "600m"], correct: 3, feedback: "正解！ 1分＝60秒。5×60＝300mだね！" },
+        { question: "【Q14: 単位】時速60kmの車が30分走りました。何km進んだ？<br>※30分は何時間かな？", answers: ["2km", "15km", "20km", "30km", "90km", "1800km"], correct: 3, feedback: "正解！ 30分＝0.5時間（半時間）。60×0.5＝30km！" },
+        { question: "【Q15: 単位】1.2kmの道のりを分速60mで歩くと何分かかる？<br>※kmをmに直そう！", answers: ["2分", "12分", "20分", "50分", "72分", "200分"], correct: 2, feedback: "正解！ 1.2km＝1200m。1200÷60＝20分だ！" },
+        { question: "【Q16: 単位】分速250mで走る自転車が3.5km進むのに何分かかる？", answers: ["11分", "14分", "15分", "25分", "70分", "140分"], correct: 1, feedback: "正解！ 3.5km＝3500m。3500÷250＝14分！" },
+        { question: "【Q17: 単位】時速90kmの電車は、15分間で何km進む？<br>※15分は1時間の何分の1？", answers: ["6km", "13.5km", "22.5km", "45km", "60km", "1350km"], correct: 2, feedback: "正解！ 15分＝1/4時間。90÷4＝22.5km！" },
+        { question: "【Q18: 単位】秒速6mで走る人が1.2km走るのに何秒かかる？", answers: ["2秒", "20秒", "50秒", "72秒", "200秒", "720秒"], correct: 4, feedback: "正解！ 1.2km＝1200m。1200÷6＝200秒！" },
+        { question: "【Q19: 単位】分速60mのカタツムリ（!?）が3時間進むと何m進む？", answers: ["180m", "1080m", "3600m", "10800m", "18000m", "64800m"], correct: 3, feedback: "正解！ 3時間＝180分。60×180＝10800m！" },
+        { question: "【Q20: 単位】42kmのマラソンを時速12kmで走り続けると、何時間何分かかる？", answers: ["3時間10分", "3時間20分", "3時間30分", "3時間50分", "4時間20分", "5時間"], correct: 2, feedback: "正解！ 42÷12＝3.5時間。0.5時間は30分だから3時間30分！" },
+
+        /* --- 21〜30問: 応用編（速さの変換・文章題） --- */
+        { question: "【Q21: 変換】時速60kmって、分速に直すと何km？（1時間は60分だね）", answers: ["1km", "6km", "10km", "60km", "360km", "3600km"], correct: 0, feedback: "正解！ 60km÷60分＝分速1kmだ！" },
+        { question: "【Q22: 変換】分速1200mで走るハヤブサは、秒速何m？（1分は60秒）", answers: ["2m", "12m", "20m", "60m", "120m", "7200m"], correct: 2, feedback: "正解！ 1200÷60＝秒速20mだ！" },
+        { question: "【Q23: 変換】秒速10mで走るウマは、分速何m？（1分間なら60倍進むよ）", answers: ["0.6m", "6m", "100m", "600m", "1000m", "3600m"], correct: 3, feedback: "正解！ 10×60＝分速600mだ！" },
+        { question: "【Q24: 変換】分速50mで歩く人は、時速何km？（60倍してmからkmに直そう）", answers: ["3km", "5km", "30km", "50km", "300km", "3000km"], correct: 0, feedback: "正解！ 50×60＝3000m＝時速3kmだ！" },
+        { question: "【Q25: 応用】分速70mで歩く姉と分速50mで歩く妹。同時に同じ場所から同じ方向へ歩くと、10分で2人の間は何m離れる？", answers: ["20m", "120m", "200m", "500m", "700m", "1200m"], correct: 2, feedback: "正解！ 1分で（70-50=20m）離れるから、20×10＝200m！" },
+        { question: "【Q26: 応用】1200m離れた学校に向かって、弟が分速60mで出発。その5分後に兄が分速80mで追いかけた。兄は出発して何分で追いつく？", answers: ["5分", "10分", "15分", "20分", "25分", "30分"], correct: 3, feedback: "正解！ 弟は先に300m進んでる。1分で20mずつ縮まるから 300÷20＝15分！" },
+        { question: "【Q27: 応用】池のまわり1km（1000m）を、Aくんは分速60m、Bくんは分速40mで反対方向にまわります。2人は何分後に出会う？", answers: ["10分後", "25分後", "40分後", "50分後", "100分後", "250分後"], correct: 0, feedback: "正解！ 反対方向だから速さを足す（60+40=100）。1000÷100＝10分後！" },
+        { question: "【Q28: 応用】時速4kmで歩くと3時間かかる道のり。ここを自転車で1.5時間で行くには、時速何kmで走ればいい？", answers: ["2km", "6km", "8km", "12km", "16km", "24km"], correct: 2, feedback: "正解！ 道のりは4×3＝12km。12km÷1.5時間＝時速8km！" },
+        { question: "【Q29: 応用】長さ100mの電車が、時速72km（秒速20m）で走っています。この電車が電柱の前を通り過ぎるのに何秒かかる？", answers: ["2秒", "5秒", "10秒", "20秒", "50秒", "72秒"], correct: 1, feedback: "正解！ 電車が自分の長さ分進めばいいから、100m÷秒速20m＝5秒！" },
+        { question: "【Q30: 最終試練】時速90kmの車と、分速1400mのバイクと、秒速22mのドローン。一番速いのはどれ？", answers: ["車", "バイク", "ドローン", "車とバイクは同じ", "バイクとドローンは同じ", "すべて同じ速さ"], correct: 0, feedback: "素晴らしい！すべて秒速に直すと、車は25m、バイクは約23.3m、ドローンは22m。よって車が一番速い！" }
+    ];
+
+    function updateStatusDOM() {
+        document.getElementById("coin-count").innerText = `💰 ${coins} G`;
+        document.getElementById("equip-display").innerText = `${myEquip.weapon}${myEquip.shield}${myEquip.armor}`;
+        
+        let lifeStr = "";
+        if (currentLife <= 0) {
+            lifeStr = "☠️ ゲームオーバー";
+        } else {
+            for (let i = 0; i < maxLife; i++) {
+                lifeStr += i < currentLife ? "❤️ " : "🖤 ";
+            }
+        }
+        document.getElementById("life-count").innerText = lifeStr;
+    }
+
+    function loadQuestion() {
+        document.getElementById("quiz-view").style.display = "block";
+        document.getElementById("shop-view").style.display = "none";
+        
+        const currentQuiz = quizData[currentIdx];
+        document.getElementById("progress").innerText = `第 ${currentIdx + 1} 問 / ${quizData.length}`;
+        document.getElementById("question-text").innerHTML = currentQuiz.question;
+        document.getElementById("result-text").innerText = "";
+        document.getElementById("action-button").style.display = "none";
+
+        const container = document.getElementById("options-container");
+        container.innerHTML = "";
+
+        currentQuiz.answers.forEach((ans, index) => {
+            const button = document.createElement("button");
+            button.className = "btn";
+            button.innerText = ans;
+            button.onclick = () => checkAnswer(index);
+            container.appendChild(button);
+        });
+    }
+
+    function checkAnswer(selectedIndex) {
+        const currentQuiz = quizData[currentIdx];
+        const resultText = document.getElementById("result-text");
+        const buttons = document.querySelectorAll("#options-container .btn");
+        
+        // 回答が選択されたらすべてのボタンを一瞬無効化（連打防止）
+        buttons.forEach(btn => btn.disabled = true);
+
+        if (selectedIndex === currentQuiz.correct) {
+            resultText.innerHTML = `<span class="correct">⭕ 正解！モンスターを倒した！</span><br><span style="font-size:12px; color:#ddd;">${currentQuiz.feedback}</span>`;
+            
+            coins += 30;
+            updateStatusDOM();
+
+            document.getElementById("action-button").innerText = "次の問題へ ➔";
+            document.getElementById("action-button").style.display = "block";
+        } else {
+            currentLife--;
+            updateStatusDOM();
+
+            if (currentLife <= 0) {
+                // 3回ミス：完全にゲームオーバー。選択ボタンは無効化したままにする
+                resultText.innerHTML = '<span class="incorrect">☠️ やられてしまった！ ポチポチ押しは厳禁だ！</span><br><span style="font-size:12px; color:#ddd;">しっかり頭の中で計算して、もう一度第1問から挑戦しよう！</span>';
+                
+                const actionBtn = document.getElementById("action-button");
+                actionBtn.innerText = "↩️ 第1問からやり長す"; // テキスト整合性確保
+                actionBtn.style.display = "block";
+            } else {
+                // まだライフがある：1.2秒後にボタンを再有効化して解き直しを促す
+                resultText.innerHTML = '<span class="incorrect">❌ 攻撃失敗！うわあ！</span><br><span style="font-size:12px; color:#ddd;">「み・は・じ」をもう一度チェックして計算しよう！</span>';
+                setTimeout(() => { buttons.forEach(btn => btn.disabled = false); }, 1200);
+            }
+        }
+    }
+
+    function handleAction() {
+        if (currentLife <= 0) {
+            currentIdx = 0;
+            currentLife = maxLife;
+            updateStatusDOM();
+            loadQuestion();
+            return;
+        }
+
+        currentIdx++;
+        
+        if (currentIdx % 5 === 0 && currentIdx < quizData.length) {
+            openShop(`🎉 ステージクリア！よろず屋がやってきた！`);
+            return;
+        }
+
+        if (currentIdx < quizData.length) {
+            loadQuestion();
+        } else {
+            coins += 500; 
+            updateStatusDOM();
+            document.getElementById("progress").innerText = "👑 全ステージ制覇！";
+            document.getElementById("question-text").innerHTML = "🎉 おめでとう！全30問の『速さ』の試練を完全クリアした！ 🎉<br>ボーナスとして500Gを贈る！最強の装備を揃えよう！";
+            document.getElementById("options-container").innerHTML = "";
+            openShop("👑 最終ショップオープン！");
+        }
+    }
+
+    function openShop(msg) {
+        document.getElementById("quiz-view").style.display = "none";
+        document.getElementById("action-button").style.display = "none";
+        document.getElementById("result-text").innerHTML = msg ? `<span style="color:#ffd700;">${msg}</span>` : "";
+        document.getElementById("shop-view").style.display = "block";
+        renderShopItems();
+    }
+
+    function renderShopItems() {
+        const listContainer = document.getElementById("shop-items-list");
+        listContainer.innerHTML = "";
+
+        shopItems.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "shop-item";
+            
+            let btnText = `${item.price} G`;
+            let canBuy = coins >= item.price && !item.bought;
+            if (item.bought) btnText = "装備中";
+
+            div.innerHTML = `
+                <div class="item-info">
+                    <span style="font-size:18px;">${item.icon}</span> <strong>${item.name}</strong>
+                </div>
+                <button class="buy-btn" ${canBuy ? '' : 'disabled'} onclick="buyItem('${item.id}')">${btnText}</button>
+            `;
+            listContainer.appendChild(div);
+        });
+    }
+
+    function buyItem(id) {
+        const item = shopItems.find(i => i.id === id);
+        if (item && coins >= item.price && !item.bought) {
+            coins -= item.price;
+            
+            shopItems.forEach(i => {
+                if (i.type === item.type) i.bought = false;
+            });
+
+            item.bought = true;
+
+            if (item.type === 'weapon') myEquip.weapon = item.icon;
+            if (item.type === 'shield') myEquip.shield = item.icon;
+            if (item.type === 'armor') myEquip.armor = item.icon;
+
+            updateStatusDOM();
+            renderShopItems();
+        }
+    }
+
+    function backToQuiz() {
+        if (currentIdx >= quizData.length) {
+            currentIdx = 0;
+        }
+        currentLife = maxLife;
+        updateStatusDOM();
+        loadQuestion();
+    }
+
+    updateStatusDOM();
+    loadQuestion();
+</script>
+
+</body>
+</html>
